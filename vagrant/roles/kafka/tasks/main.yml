@@ -1,0 +1,118 @@
+---
+- name: install Java 1.8 and some basic dependencies
+  yum:
+    name:
+      # - iptables-services
+      - vim
+      - java-1.8.0-openjdk
+    state: present
+  tags: setup-system
+
+- name: download Kafka from kafka.apache.org
+  copy:
+    src: kafka_2.12-2.2.0.tgz
+    dest: /opt/kafka_2.12-2.2.0.tgz
+  tags: setup-system
+
+- name: extract archive
+  unarchive:
+    dest: /usr/share
+    src: /opt/kafka_2.12-2.2.0.tgz
+    creates: /usr/share/kafka_2.12-2.2.0
+    copy: no
+  tags: setup-system
+
+- name: add group "kafka"
+  group:
+    name: kafka
+  tags: setup-system
+
+- name: add user "kafka"
+  user:
+    name: kafka
+    group: kafka
+    home: /usr/share/kafka_2.12-2.2.0
+  tags: setup-system
+
+- name: copy the service configs
+  copy:
+    src: "{{ item }}"
+    dest: "/usr/share/kafka_2.12-2.2.0/config"
+    mode: 0755
+  register: kafka_service_configs
+  with_items:
+    - 'server0.properties'
+    - 'server1.properties'
+    - 'server2.properties'
+    - 'zookeeper.properties'
+  tags: setup-kafka
+
+- name: copy the service scripts
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/"
+    mode: 0755
+  register: kafka_service_scripts
+  with_items:
+    - 'zookeeper.service'
+    - 'kafka0.service'
+    - 'kafka1.service'
+    - 'kafka2.service'
+  tags: setup-kafka
+
+#- name: copy the other files configs
+#  copy:
+#    src: "{{ item }}"
+#    dest: "/usr/share/kafka_2.12-2.2.0/config"
+#    mode: 0755
+#  with_items:
+#    - 'file.json'
+#  tags: setup-kafka
+
+- name: change ownership of Kafka installation
+  file:
+    path: /usr/share/kafka_2.12-2.2.0
+    owner: kafka
+    group: kafka
+    state: directory
+    recurse: yes
+  tags: setup-kafka
+
+# - name: deploy iptables rules
+#   template:
+#     src: iptables-save
+#     dest: /etc/sysconfig/iptables
+#   notify: restart iptables
+
+- name: enable and start services
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: restarted
+  when: kafka_service_configs.changed or kafka_service_scripts.changed
+  register: start_kafka_services
+  with_items:
+    - zookeeper
+    - kafka0
+    - kafka1
+    - kafka2
+  tags: start-services
+
+- name: wait for services to start
+  wait_for:
+    port: "{{ item }}"
+    delay: 3
+  with_items:
+    - 2181
+    - 9092
+    - 9093
+    - 9094
+  when: start_kafka_services.changed
+
+- name: create topics
+  command: /usr/share/kafka_2.12-2.2.0/bin/kafka-topics.sh --create --zookeeper localhost:2181 --if-not-exists --partitions 3 --replication-factor 3 --topic {{ item }} --config retention.ms=30000
+  with_items: "{{ kafka_topic_names }}"
+  tags: create-topics
+
+
+...

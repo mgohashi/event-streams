@@ -1,0 +1,35 @@
+---
+- name: install MySQL
+  yum:
+    name:
+      - mariadb-server
+    state: present
+  tags: setup-mysql
+
+- name: enable and start services
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: restarted
+  with_items:
+    - mariadb
+  tags: setup-mysql
+
+- name: enable security
+  shell: "echo -e '\n\ntest123\ntest123\n\n\nn\n\n ' | mysql_secure_installation 2>/dev/null"
+  args:
+    executable: /bin/bash
+  tags: setup-mysql
+
+- name: copy itens
+  copy:
+    src: init.sql
+    dest: /tmp
+  tags: setup-mysql
+
+- name: create users and databases
+  shell: "mysql -u root -p'test123' < /tmp/init.sql"
+  args:
+    executable: /bin/bash
+  tags: setup-mysql
+...

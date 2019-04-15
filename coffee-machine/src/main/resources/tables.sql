@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS `machine_registry` CASCADE;
+CREATE TABLE IF NOT EXISTS `machine_registry` (id VARCHAR(36) PRIMARY KEY, order_id VARCHAR(36) NOT NULL, process_dt DATETIME NOT NULL, status INT NOT NULL);

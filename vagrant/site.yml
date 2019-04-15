@@ -1,0 +1,15 @@
+---
+- name: kafka provisioner
+  hosts: kafka
+  become: true
+
+  roles:
+    - kafka
+
+- name: mysql provisioner
+  hosts: mysql
+  become: true
+
+  roles:
+    - mysql
+...
