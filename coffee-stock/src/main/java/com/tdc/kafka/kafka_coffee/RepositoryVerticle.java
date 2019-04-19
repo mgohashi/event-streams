@@ -2,6 +2,7 @@ package com.tdc.kafka.kafka_coffee;
 
 import com.sun.istack.internal.NotNull;
 import com.tdc.kafka.kafka_coffee.model.Order;
+import com.tdc.kafka.kafka_coffee.model.Product;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.vertx.core.json.JsonArray;
@@ -21,16 +22,20 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @SuppressWarnings({"ResultOfMethodCallIgnored", "Duplicates"})
 public class RepositoryVerticle extends AbstractVerticle {
 
     public static final String STOCK_UPDATE_QUEUE = "stock-update";
     public static final String REFILL_STOCK_QUEUE = "refill-stock";
+    public static final String GET_PRODUCTS = "get-products";
+    public static final String STOCK_UPDATED = "stock-updated";
 
     private final String UPDATE_STOCK;
     private final String REFILL_STOCK_1_2;
     private final String REFILL_STOCK_3;
+    private final String SELECT_PRODUCTS;
     private static final Logger LOG = LoggerFactory.getLogger(RepositoryVerticle.class);
     private static final String QUERIES_PROPERTIES_FILE = "/queries.properties";
     private static final String TABLES_SQL_FILE = "/tables.sql";
@@ -44,6 +49,7 @@ public class RepositoryVerticle extends AbstractVerticle {
             UPDATE_STOCK = properties.getProperty("update.stock");
             REFILL_STOCK_1_2 = properties.getProperty("refill.update.stock.1.2");
             REFILL_STOCK_3 = properties.getProperty("refill.update.stock.3");
+            SELECT_PRODUCTS = properties.getProperty("select.all.products");
         } catch (Exception ex) {
             ex.printStackTrace();
             throw new RuntimeException(ex);
@@ -52,13 +58,15 @@ public class RepositoryVerticle extends AbstractVerticle {
 
     @Override
     public Completable rxStart() {
+        registerGetProducts();
+
         JsonObject mySQLClientConfig = config().getJsonObject("mysql");
 
         mySQLClient = MySQLClient.createShared(vertx, mySQLClientConfig);
 
         try {
             registerStockUpdate();
-            refillStockUpdate();
+            registerRefillStockUpdate();
 
             List<String> tableStatements = getTablesStatements();
 
@@ -100,13 +108,16 @@ public class RepositoryVerticle extends AbstractVerticle {
                         Completable.concatArray(completables.toArray(new Completable[0]))
                                 .compose(SQLClientHelper.txCompletableTransformer(conn))
                                 .doFinally(conn::close)
-                                .subscribe(() -> message.reply(buildReply(order, null)),
+                                .subscribe(() -> {
+                                            vertx.eventBus().send(STOCK_UPDATED, true);
+                                            message.reply(buildReply(order, null));
+                                        },
                                         error -> message.reply(buildReply(order, error)));
                     }, error -> message.fail(1, error.getMessage()));
                 }, error -> LOG.error(error.getMessage(), error));
     }
 
-    private void refillStockUpdate() {
+    private void registerRefillStockUpdate() {
         vertx.eventBus().<String>consumer(REFILL_STOCK_QUEUE)
                 .toFlowable()
                 .subscribe(message -> {
@@ -117,10 +128,35 @@ public class RepositoryVerticle extends AbstractVerticle {
                                         .ignoreElement())
                                 .compose(SQLClientHelper.txCompletableTransformer(conn))
                                 .doFinally(conn::close)
-                                .subscribe(() -> message.reply(true),
+                                .subscribe(() -> {
+                                            vertx.eventBus().send(STOCK_UPDATED, true);
+                                            message.reply(true);
+                                        },
                                         error -> message.fail(1, error.getMessage()));
                     });
                 }, error -> LOG.error(error.getMessage(), error));
+    }
+
+    private void registerGetProducts() {
+        vertx.eventBus().<String>consumer(GET_PRODUCTS)
+                .toFlowable()
+                .subscribe(message -> {
+                    mySQLClient.rxGetConnection().subscribe(conn -> {
+                        conn.rxQuery(SELECT_PRODUCTS)
+                                .map(resultSet -> resultSet.getRows())
+                                .doFinally(conn::close)
+                                .subscribe(rows -> {
+                                    List<Product> products = rows.stream()
+                                            .map(item -> new Product(
+                                                    item.getString("id"),
+                                                    item.getString("name"),
+                                                    item.getLong("amount"),
+                                                    item.getString("unit")))
+                                            .collect(Collectors.toList());
+                                    message.reply(new JsonArray(products).encode());
+                                });
+                    });
+                });
     }
 
     private String buildReply(Order order, Throwable error) {

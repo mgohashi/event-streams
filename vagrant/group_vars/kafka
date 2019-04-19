@@ -4,4 +4,5 @@ kafka_topic_names: [ "test-order-submitted",
                      "test-order-preparation-started",
                      "test-order-preparation-finished",
                      "test-order-cancelled",
-                     "test-order-delivered"]
+                     "test-order-delivered",
+                     "test-stock-updated"]

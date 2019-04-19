@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class EventStreamVerticle extends AbstractVerticle {
 
     private static final Logger LOG = LoggerFactory.getLogger(EventStreamVerticle.class);
-    private static final int PREPARATION_TIME_IN_SECONDS = 60;
+    private static final int PREPARATION_TIME_IN_SECONDS = 10;
 
     @Override
     public Completable rxStart() {

@@ -40,5 +40,6 @@
         <module>coffee-machine</module>
         <module>coffee-model</module>
         <module>coffee-stock</module>
+        <module>coffee-monitor</module>
     </modules>
 </project>

@@ -1,0 +1,97 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Coffee Monitor</title>
+    <link rel="stylesheet" href="assets/lib/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/lib/font-awesome/5.8.1/css/fontawesome.min.css">
+    <script src="assets/lib/sockjs-client/1.3.0/dist/sockjs.min.js"></script>
+    <script src="assets/lib/vertx3-eventbus-client/3.7.0/vertx-eventbus.js"></script>
+    <script src="assets/lib/lodash/4.17.11/lodash.min.js"></script>
+    <script src="assets/lib/gauge.js/1.3.5/dist/gauge.js"></script>
+    <script src="assets/lib/angular/1.7.7/angular.min.js"></script>
+    <script src="app/js/app.js"></script>
+    <style>
+        body {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+    </style>
+</head>
+<body ng-app="dashboard" ng-controller="DashboardController">
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12" style="margin-bottom: 5%">
+            <h1>Monitor de pedidos</h1>
+            <p>Monitoramento de dados de pedidos</p>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body" style="height: 222px;">
+                    <h5 class="card-title">Quantidade de Solicitações</h5>
+                    <p class="card-text" style="text-align: center;">
+                        <span style="font-size: 100px; text-align: center;">{{count}}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Porcentagem de Entregas</h5>
+                    <p class="card-text">
+                        <canvas id="gauge2"></canvas>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Porcentagem de Cancelados</h5>
+                    <p class="card-text">
+                        <canvas id="gauge3"></canvas>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12" style="margin-bottom: 5%; margin-top: 5%;">
+            <h1>Estoque de pedidos</h1>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body" style="height: 200px;">
+                    <h5 class="card-title">Quantidade de Café</h5>
+                    <p class="card-text" style="text-align: center;">
+                        <span style="font-size: 80px; text-align: center;">{{amountCoffee}}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body" style="height: 200px;">
+                    <h5 class="card-title">Quantidade de Leite</h5>
+                    <p class="card-text" style="text-align: center;">
+                        <span style="font-size: 80px; text-align: center;">{{amountMilk}}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body" style="height: 200px;">
+                    <h5 class="card-title">Quantidade de Pão na chapa</h5>
+                    <p class="card-text" style="text-align: center;">
+                        <span style="font-size: 80px; text-align: center;">{{amountBread}}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>

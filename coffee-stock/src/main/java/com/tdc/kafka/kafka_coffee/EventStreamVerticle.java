@@ -12,6 +12,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static com.tdc.kafka.kafka_coffee.RepositoryVerticle.GET_PRODUCTS;
+import static com.tdc.kafka.kafka_coffee.RepositoryVerticle.STOCK_UPDATED;
+
 /**
  * Process events from Kafka
  */
@@ -85,6 +88,20 @@ public class EventStreamVerticle extends AbstractVerticle {
                                             },
                                             error -> LOG.error(error.getMessage(), error)),
                             error -> LOG.error(error.getMessage(), error));
+
+            vertx.eventBus().consumer(STOCK_UPDATED).toFlowable()
+                    .subscribe(event -> {
+                        vertx.eventBus().<String>rxSend(GET_PRODUCTS, null)
+                                .subscribe(reply -> {
+                                    KafkaProducerRecord<String, String> newRecord =
+                                            KafkaProducerRecord.create(externalKafkaConfig.getString("stock.updated.topic"),
+                                                    reply.body());
+
+                                    producer.rxWrite(newRecord)
+                                            .subscribe(recordCreated -> LOG.info("Stock updated event created..."),
+                                                    Throwable::printStackTrace);
+                                });
+                    });
 
             LOG.info(">> Coffee Store - Event Stream Consumer Started!");
         });

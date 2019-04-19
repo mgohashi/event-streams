@@ -1,15 +1,9 @@
 {
-  "mysql": {
-    "host": "192.168.99.2",
-    "username": "user",
-    "password": "test123",
-    "database": "coffee_stock"
-  },
   "kafka": {
     "bootstrap.servers": "192.168.99.2:9092, 192.168.99.2:9093, 192.168.99.2:9094",
-    "group.id": "coffee-stock",
+    "group.id": "coffee-monitor",
     "order.placed.topic": "test-order-placed",
-    "order.confirmed.topic": "test-order-confirmed",
+    "order.preparation.finished.topic": "test-order-preparation-finished",
     "order.cancelled.topic": "test-order-cancelled",
     "stock.updated.topic": "test-stock-updated"
   }
