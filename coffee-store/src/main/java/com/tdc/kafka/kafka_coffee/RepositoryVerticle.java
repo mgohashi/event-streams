@@ -1,5 +1,6 @@
 package com.tdc.kafka.kafka_coffee;
 
+import com.sun.istack.internal.NotNull;
 import com.tdc.kafka.kafka_coffee.model.Item;
 import com.tdc.kafka.kafka_coffee.model.Order;
 import com.tdc.kafka.kafka_coffee.model.OrderStatus;
@@ -84,7 +85,77 @@ public class RepositoryVerticle extends AbstractVerticle {
         }
     }
 
-    private Completable updateDB(SQLClient mySQLClient, String tableStatement) {
+    private void registerInsertOrder() {
+        vertx.eventBus().<String>consumer(ORDER_UPDATE_QUEUE)
+                .toFlowable()
+                .subscribe(message -> {
+                    Order order = new JsonObject(message.body()).mapTo(Order.class);
+
+                    if (order.getPlacedDate() == null) {
+                        order.setStatus(OrderStatus.PLACED);
+                        order.setPlacedDate(java.util.Date.from(LocalDateTime.now()
+                                .atZone(ZoneId.systemDefault()).toInstant()));
+                    }
+
+                    mySQLClient.rxGetConnection().subscribe(conn -> {
+                        conn.rxUpdateWithParams(INSERT_OR_UPDATE_ORDER, new JsonArray(Arrays.asList(order.getId(),
+                                order.getTotal(),
+                                order.getPlacedDate(),
+                                order.getConfirmedDate(),
+                                order.getDeliveredDate(),
+                                order.getCancelledDate()))).ignoreElement()
+                                .andThen(updateItems(conn, order))
+                                .compose(SQLClientHelper.txCompletableTransformer(conn))
+                                .doFinally(conn::close)
+                                .subscribe(() -> getOrderById(conn, order.getId())
+                                                .subscribe(res -> message.reply(JsonObject.mapFrom(res).encode()),
+                                                        error -> message.fail(1, error.getMessage())),
+                                        error -> message.fail(1, error.getMessage()));
+                    });
+                });
+    }
+
+    private void registerGetOrder() {
+        vertx.eventBus().<String>consumer(GET_ORDER_QUEUE)
+                .toFlowable()
+                .subscribe(message -> {
+                    Order order = new JsonObject(message.body()).mapTo(Order.class);
+                    order.setPlacedDate(java.util.Date.from(LocalDateTime.now()
+                            .atZone(ZoneId.systemDefault()).toInstant()));
+                    mySQLClient.rxGetConnection().subscribe(conn ->
+                            getOrderById(conn, order.getId())
+                                    .doFinally(conn::close)
+                                    .subscribe(res ->
+                                                    message.reply(JsonObject.mapFrom(res).encode()),
+                                            error -> message.fail(1, error.getMessage())));
+                });
+    }
+
+    private Single<Order> getOrderById(@NotNull SQLConnection conn, @NotNull String orderId) {
+        return conn.rxQuerySingleWithParams(QUERY_ORDER, new JsonArray(Collections.singletonList(orderId)))
+                .map(res -> new Order(res.getString(0),
+                        new BigDecimal(res.getString(1)).setScale(2),
+                        parseDateValue(res.getString(2)),
+                        parseDateValue(res.getString(3)),
+                        parseDateValue(res.getString(4)),
+                        parseDateValue(res.getString(5))))
+                .flatMapSingle(order ->
+                        conn.rxQueryWithParams(QUERY_ITEM_BY_ORDER_ID, new JsonArray(Collections.singletonList(orderId)))
+                                .map(ResultSet::getResults)
+                                .flatMap(rows -> {
+                                            rows.forEach(
+                                                    res -> order.addItem(
+                                                            new Item(res.getString(0),
+                                                                    res.getString(1),
+                                                                    res.getInteger(2),
+                                                                    new BigDecimal(res.getString(3))))
+                                            );
+                                            return Single.just(order);
+                                        }
+                                ));
+    }
+
+    private Completable updateDB(@NotNull SQLClient mySQLClient, @NotNull String tableStatement) {
         Function<String, String> calcLength = (str) -> {
             if (str.length() - 1 > 50) {
                 return str.substring(0, 50);
@@ -103,69 +174,13 @@ public class RepositoryVerticle extends AbstractVerticle {
         return IOUtils.readLines(stream, "utf8");
     }
 
-    private void registerInsertOrder() {
-        vertx.eventBus().<String>consumer(ORDER_UPDATE_QUEUE)
-                .toFlowable()
-                .subscribe(message -> {
-                    Order order = new JsonObject(message.body()).mapTo(Order.class);
-
-                    if (order.getPlacedDate() == null) {
-                        order.setStatus(OrderStatus.PLACED);
-                        order.setPlacedDate(java.util.Date.from(LocalDateTime.now()
-                                .atZone(ZoneId.systemDefault()).toInstant()));
-                    }
-
-                    mySQLClient.rxGetConnection().subscribe(conn -> {
-                        conn.rxUpdateWithParams(INSERT_OR_UPDATE_ORDER, new JsonArray(Arrays.asList(order.getId(),
-                                order.getPlacedDate(),
-                                order.getConfirmedDate(),
-                                order.getDeliveredDate(),
-                                order.getCancelledDate())))
-                                .ignoreElement()
-                                .andThen(updateItems(conn, order))
-                                .compose(SQLClientHelper.txCompletableTransformer(conn))
-                                .doFinally(conn::close)
-                                .subscribe(() ->
-                                                getOrderById(conn, order.getId())
-                                                        .subscribe(res -> message.reply(JsonObject.mapFrom(res).encode()),
-                                                                error -> message.fail(1, error.getMessage())),
-                                        error -> message.fail(1, error.getMessage()));
-                    });
-                });
-    }
-
-    private Single<Order> getOrderById(SQLConnection conn, String orderId) {
-        return conn.rxQuerySingleWithParams(QUERY_ORDER, new JsonArray(Collections.singletonList(orderId)))
-                .map(res -> new Order(res.getString(0),
-                        parseDateValue(res.getString(1)),
-                        parseDateValue(res.getString(2)),
-                        parseDateValue(res.getString(3)),
-                        parseDateValue(res.getString(4))))
-                .flatMapSingle(order ->
-                        conn.rxQueryWithParams(QUERY_ITEM_BY_ORDER_ID, new JsonArray(Collections.singletonList(orderId)))
-                                .map(ResultSet::getResults)
-                                .flatMap(rows -> {
-                                            rows.forEach(
-                                                    res -> order.addItem(
-                                                            new Item(res.getString(0),
-                                                                    res.getString(1),
-                                                                    res.getInteger(2),
-                                                                    new BigDecimal(res.getString(3))
-                                                            )
-                                                    )
-                                            );
-                                            return Single.just(order);
-                                        }
-                                ));
-    }
-
     private Date parseDateValue(String string) throws ParseException {
         if (string != null)
             return DATE_FORMAT.parse(string);
         return null;
     }
 
-    private Completable updateItems(SQLConnection conn, Order order) {
+    private Completable updateItems(@NotNull SQLConnection conn, @NotNull Order order) {
         if (order.getStatus() != OrderStatus.PLACED) {
             return Completable.complete();
         }
@@ -180,25 +195,8 @@ public class RepositoryVerticle extends AbstractVerticle {
                                         item.getProdId(),
                                         order.getId(),
                                         item.getAmount(),
-                                        item.getValue())))
-                                .ignoreElement()));
+                                        item.getValue()))).ignoreElement()));
 
         return Completable.concatArray(completables.toArray(new Completable[0]));
-    }
-
-    private void registerGetOrder() {
-        vertx.eventBus().<String>consumer(GET_ORDER_QUEUE)
-                .toFlowable()
-                .subscribe(message -> {
-                    Order order = new JsonObject(message.body()).mapTo(Order.class);
-                    order.setPlacedDate(java.util.Date.from(LocalDateTime.now()
-                            .atZone(ZoneId.systemDefault()).toInstant()));
-                    mySQLClient.rxGetConnection().subscribe(conn ->
-                            getOrderById(conn, order.getId())
-                                    .doFinally(conn::close)
-                                    .subscribe(res ->
-                                                    message.reply(JsonObject.mapFrom(res).encode()),
-                                            error -> message.fail(1, error.getMessage())));
-                });
     }
 }

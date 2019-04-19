@@ -2,7 +2,7 @@
   "kafka": {
     "bootstrap.servers": "192.168.99.2:9092, 192.168.99.2:9093, 192.168.99.2:9094",
     "group.id": "coffee-machine",
-    "order.placed.topic": "test-order-placed",
+    "order.confirmed.topic": "test-order-confirmed",
     "order.preparation.started.topic": "test-order-preparation-started",
     "order.preparation.finished.topic": "test-order-preparation-finished"
   }

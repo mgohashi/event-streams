@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -17,6 +18,7 @@ public class Order {
     private Date confirmedDate;
     private Date deliveredDate;
     private Date cancelledDate;
+    private BigDecimal total;
     private OrderStatus status;
     private List<Item> items;
 
@@ -25,8 +27,9 @@ public class Order {
         this.items = new ArrayList<>();
     }
 
-    public Order(String id, Date placedDate, Date confirmedDate, Date deliveredDate, Date cancelledDate) {
+    public Order(String id, BigDecimal total, Date placedDate, Date confirmedDate, Date deliveredDate, Date cancelledDate) {
         this.id = id;
+        this.total = total;
         this.placedDate = placedDate;
         this.confirmedDate = confirmedDate;
         this.deliveredDate = deliveredDate;

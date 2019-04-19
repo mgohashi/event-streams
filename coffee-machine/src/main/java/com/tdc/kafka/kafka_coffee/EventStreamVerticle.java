@@ -17,10 +17,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Process events from Kafka
+ */
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class EventStreamVerticle extends AbstractVerticle {
 
     private static final Logger LOG = LoggerFactory.getLogger(EventStreamVerticle.class);
+    private static final int PREPARATION_TIME_IN_SECONDS = 60;
 
     @Override
     public Completable rxStart() {
@@ -45,11 +49,13 @@ public class EventStreamVerticle extends AbstractVerticle {
 
             KafkaProducer<String, String> producer = KafkaProducer.create(vertx, prodConfig);
 
-            consumer.subscribe(externalKafkaConfig.getString("order.placed.topic"));
+            consumer.subscribe(externalKafkaConfig.getString("order.confirmed.topic"));
 
+            //Subscribe to topic
             consumer.toObservable()
                     .subscribe(
                             record -> {
+                                //New message arrived
                                 Order order = new JsonObject(record.value()).mapTo(Order.class);
 
                                 order.setConfirmedDate(java.util.Date.from(LocalDateTime.now()
@@ -59,12 +65,17 @@ public class EventStreamVerticle extends AbstractVerticle {
                                 KafkaProducerRecord<String, String> newRecord1 =
                                         KafkaProducerRecord.create(externalKafkaConfig.getString("order.preparation.started.topic"),
                                                 order.getId(), JsonObject.mapFrom(order).encode());
+
+                                LOG.info("Preparation of order {} started...", order.getId());
+
+                                //Send event to preparation started topic
                                 producer.rxWrite(newRecord1)
                                         .doOnSuccess(recordCreated -> LOG.info("Order {} preparation started event created...", order.getId()))
                                         .doOnError(Throwable::printStackTrace)
+                                        .delay(PREPARATION_TIME_IN_SECONDS, TimeUnit.SECONDS)
                                         .ignoreElement()
-                                        .delay(5, TimeUnit.SECONDS)
                                         .subscribe(() -> {
+                                            //Message sent confirmation
                                             order.setDeliveredDate(java.util.Date.from(LocalDateTime.now()
                                                     .atZone(ZoneId.systemDefault()).toInstant()));
                                             order.setStatus(OrderStatus.DELIVERED);
@@ -72,15 +83,18 @@ public class EventStreamVerticle extends AbstractVerticle {
                                             KafkaProducerRecord<String, String> newRecord2 =
                                                     KafkaProducerRecord.create(externalKafkaConfig.getString("order.preparation.finished.topic"),
                                                             order.getId(), JsonObject.mapFrom(order).encode());
+
+                                            //Send event to preparation finished
                                             producer.rxWrite(newRecord2)
                                                     .subscribe(recordCreated -> LOG.info("Order {} preparation finished event created...", order.getId()),
                                                             Throwable::printStackTrace);
-                                            LOG.info("Event processed {}", record.value());
+
+                                            LOG.info("Preparation of order {} finished...", order.getId());
                                             consumer.commit();
                                         });
                             });
 
-            LOG.info("Event Stream Consumer Started!");
+            LOG.info(">> Coffee Machine - Event Stream Consumer Started!");
         });
     }
 }
