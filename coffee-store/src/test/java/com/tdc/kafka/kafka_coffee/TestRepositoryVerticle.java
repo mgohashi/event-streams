@@ -18,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -139,9 +138,9 @@ public class TestRepositoryVerticle extends BaseTest {
                 assertNotNull(received.getPlacedDate(), "Placed Date should not be null!");
                 assertNotNull(received.getConfirmedDate(), "Confirmed Date should not be null!");
                 break;
-            case CANCELLED:
+            case CANCELED:
                 assertNotNull(received.getPlacedDate(), "Placed Date should not be null!");
-                assertNotNull(received.getCancelledDate(), "Cancelled Date should not be null!");
+                assertNotNull(received.getCanceledDate(), "Canceled Date should not be null!");
                 break;
             default:
                 assertNotNull(received.getPlacedDate(), "Placed Date should not be null!");

@@ -4,5 +4,5 @@ public enum OrderStatus {
     PLACED,
     CONFIRMED,
     DELIVERED,
-    CANCELLED
+    CANCELED
 }

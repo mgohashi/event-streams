@@ -19,6 +19,7 @@ public class BaseTest {
         item2.setValue(BigDecimal.TEN.setScale(2));
         item2.setAmount(1);
         order.addItem(item2);
+        order.setTotal(item1.getValue().add(item2.getValue()));
         return order;
     }
 }

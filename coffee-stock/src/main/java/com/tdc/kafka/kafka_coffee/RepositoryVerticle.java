@@ -1,6 +1,5 @@
 package com.tdc.kafka.kafka_coffee;
 
-import com.sun.istack.internal.NotNull;
 import com.tdc.kafka.kafka_coffee.model.Order;
 import com.tdc.kafka.kafka_coffee.model.Product;
 import io.reactivex.Completable;
@@ -167,7 +166,7 @@ public class RepositoryVerticle extends AbstractVerticle {
                 .encode();
     }
 
-    private Completable updateDB(@NotNull SQLClient mySQLClient, @NotNull String tableStatement) {
+    private Completable updateDB(SQLClient mySQLClient, String tableStatement) {
         Function<String, String> calcLength = (str) -> {
             if (str.length() - 1 > 50) {
                 return str.substring(0, 50);

@@ -53,7 +53,7 @@ public class EventStreamVerticle extends AbstractVerticle {
                             externalKafkaConfig.getString("order.confirmed.topic"),
                             externalKafkaConfig.getString("order.preparation.started.topic"),
                             externalKafkaConfig.getString("order.preparation.finished.topic"),
-                            externalKafkaConfig.getString("order.cancelled.topic")
+                            externalKafkaConfig.getString("order.canceled.topic")
                     ))
             );
 

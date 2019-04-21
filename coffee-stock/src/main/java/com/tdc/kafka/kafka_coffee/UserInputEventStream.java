@@ -14,7 +14,7 @@ import static com.tdc.kafka.kafka_coffee.RepositoryVerticle.REFILL_STOCK_QUEUE;
 public class UserInputEventStream extends AbstractVerticle {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserInputEventStream.class);
-    private static final int EVENT_PERIOD_IN_MILLISECONDS = 10000;
+    private static final int EVENT_PERIOD_IN_MILLISECONDS = 15000;
 
     @Override
     public Completable rxStart() {

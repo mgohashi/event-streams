@@ -17,7 +17,7 @@ public class Order {
     private Date placedDate;
     private Date confirmedDate;
     private Date deliveredDate;
-    private Date cancelledDate;
+    private Date canceledDate;
     private BigDecimal total;
     private OrderStatus status;
     private List<Item> items;
@@ -27,13 +27,13 @@ public class Order {
         this.items = new ArrayList<>();
     }
 
-    public Order(String id, BigDecimal total, Date placedDate, Date confirmedDate, Date deliveredDate, Date cancelledDate) {
+    public Order(String id, BigDecimal total, Date placedDate, Date confirmedDate, Date deliveredDate, Date canceledDate) {
         this.id = id;
         this.total = total;
         this.placedDate = placedDate;
         this.confirmedDate = confirmedDate;
         this.deliveredDate = deliveredDate;
-        this.cancelledDate = cancelledDate;
+        this.canceledDate = canceledDate;
         this.items = new ArrayList<>();
         validateStatus();
     }
@@ -52,9 +52,9 @@ public class Order {
         } else if (deliveredDate != null) {
             validateDates("Placed and confirmed date should be set before confirmed date", placedDate, confirmedDate);
             this.status = OrderStatus.DELIVERED;
-        } else if (cancelledDate != null) {
+        } else if (canceledDate != null) {
             validateDates("Placed date should be set before confirmed date", placedDate);
-            this.status = OrderStatus.CANCELLED;
+            this.status = OrderStatus.CANCELED;
         }
     }
 

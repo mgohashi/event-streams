@@ -10,6 +10,8 @@
     <script src="assets/lib/lodash/4.17.11/lodash.min.js"></script>
     <script src="assets/lib/gauge.js/1.3.5/dist/gauge.js"></script>
     <script src="assets/lib/angular/1.7.7/angular.min.js"></script>
+    <script src="assets/lib/chart.js/2.7.3/dist/Chart.min.js"></script>
+    <script src="assets/lib/countUp.js/1.7.0/dist/countUp.js"></script>
     <script src="app/js/app.js"></script>
     <style>
         body {
@@ -22,16 +24,16 @@
 
 <div class="container">
     <div class="row">
-        <div class="col-md-12" style="margin-bottom: 5%">
-            <h1>Monitor de pedidos</h1>
-            <p>Monitoramento de dados de pedidos</p>
+        <div class="col-md-12" style="margin-bottom: 2%">
+            <h1>Orders monitor</h1>
+            <p>Orders data monitor</p>
         </div>
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body" style="height: 222px;">
-                    <h5 class="card-title">Quantidade de Solicitações</h5>
+                    <h5 class="card-title">Orders</h5>
                     <p class="card-text" style="text-align: center;">
-                        <span style="font-size: 100px; text-align: center;">{{count}}</span>
+                        <span id="counter" style="font-size: 100px; text-align: center;"></span>
                     </p>
                 </div>
             </div>
@@ -39,7 +41,7 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Porcentagem de Entregas</h5>
+                    <h5 class="card-title">Delivered %</h5>
                     <p class="card-text">
                         <canvas id="gauge2"></canvas>
                     </p>
@@ -49,7 +51,7 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Porcentagem de Cancelados</h5>
+                    <h5 class="card-title">Canceled %</h5>
                     <p class="card-text">
                         <canvas id="gauge3"></canvas>
                     </p>
@@ -58,35 +60,35 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-12" style="margin-bottom: 5%; margin-top: 5%;">
-            <h1>Estoque de pedidos</h1>
+        <div class="col-md-12" style="margin-bottom: 2%; margin-top: 7%;">
+            <h1>Stock</h1>
         </div>
         <div class="col-md-4">
             <div class="card">
-                <div class="card-body" style="height: 200px;">
-                    <h5 class="card-title">Quantidade de Café</h5>
+                <div class="card-body" style="height: 252px;">
+                    <h5 class="card-title">Coffee (g)</h5>
                     <p class="card-text" style="text-align: center;">
-                        <span style="font-size: 80px; text-align: center;">{{amountCoffee}}</span>
+                        <canvas id="coffeeChart" width="320" height="190"></canvas>
                     </p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card">
-                <div class="card-body" style="height: 200px;">
-                    <h5 class="card-title">Quantidade de Leite</h5>
+                <div class="card-body" style="height: 252px;">
+                    <h5 class="card-title">Milk (ml)</h5>
                     <p class="card-text" style="text-align: center;">
-                        <span style="font-size: 80px; text-align: center;">{{amountMilk}}</span>
+                        <canvas id="milkChart" width="320" height="190"></canvas>
                     </p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card">
-                <div class="card-body" style="height: 200px;">
-                    <h5 class="card-title">Quantidade de Pão na chapa</h5>
+                <div class="card-body" style="height: 252px;">
+                    <h5 class="card-title">Grilled bread (un)</h5>
                     <p class="card-text" style="text-align: center;">
-                        <span style="font-size: 80px; text-align: center;">{{amountBread}}</span>
+                        <canvas id="breadChart" width="320" height="190"></canvas>
                     </p>
                 </div>
             </div>

@@ -55,43 +55,47 @@ public class EventStreamVerticle extends AbstractVerticle {
             consumer.toObservable()
                     .subscribe(
                             record -> {
-                                //New message arrived
-                                Order order = new JsonObject(record.value()).mapTo(Order.class);
+                                try {
+                                    //New message arrived
+                                    Order order = new JsonObject(record.value()).mapTo(Order.class);
 
-                                order.setConfirmedDate(java.util.Date.from(LocalDateTime.now()
-                                        .atZone(ZoneId.systemDefault()).toInstant()));
-                                order.setStatus(OrderStatus.CONFIRMED);
+                                    order.setConfirmedDate(java.util.Date.from(LocalDateTime.now()
+                                            .atZone(ZoneId.systemDefault()).toInstant()));
+                                    order.setStatus(OrderStatus.CONFIRMED);
 
-                                KafkaProducerRecord<String, String> newRecord1 =
-                                        KafkaProducerRecord.create(externalKafkaConfig.getString("order.preparation.started.topic"),
-                                                order.getId(), JsonObject.mapFrom(order).encode());
+                                    KafkaProducerRecord<String, String> newRecord1 =
+                                            KafkaProducerRecord.create(externalKafkaConfig.getString("order.preparation.started.topic"),
+                                                    order.getId(), JsonObject.mapFrom(order).encode());
 
-                                LOG.info("Preparation of order {} started...", order.getId());
+                                    LOG.info("Preparation of order {} started...", order.getId());
 
-                                //Send event to preparation started topic
-                                producer.rxWrite(newRecord1)
-                                        .doOnSuccess(recordCreated -> LOG.info("Order {} preparation started event created...", order.getId()))
-                                        .doOnError(Throwable::printStackTrace)
-                                        .delay(PREPARATION_TIME_IN_SECONDS, TimeUnit.SECONDS)
-                                        .ignoreElement()
-                                        .subscribe(() -> {
-                                            //Message sent confirmation
-                                            order.setDeliveredDate(java.util.Date.from(LocalDateTime.now()
-                                                    .atZone(ZoneId.systemDefault()).toInstant()));
-                                            order.setStatus(OrderStatus.DELIVERED);
+                                    //Send event to preparation started topic
+                                    producer.rxWrite(newRecord1)
+                                            .doOnSuccess(recordCreated -> LOG.info("Order {} preparation started event created...", order.getId()))
+                                            .doOnError(Throwable::printStackTrace)
+                                            .delay(PREPARATION_TIME_IN_SECONDS, TimeUnit.SECONDS)
+                                            .ignoreElement()
+                                            .subscribe(() -> {
+                                                //Message sent confirmation
+                                                order.setDeliveredDate(java.util.Date.from(LocalDateTime.now()
+                                                        .atZone(ZoneId.systemDefault()).toInstant()));
+                                                order.setStatus(OrderStatus.DELIVERED);
 
-                                            KafkaProducerRecord<String, String> newRecord2 =
-                                                    KafkaProducerRecord.create(externalKafkaConfig.getString("order.preparation.finished.topic"),
-                                                            order.getId(), JsonObject.mapFrom(order).encode());
+                                                KafkaProducerRecord<String, String> newRecord2 =
+                                                        KafkaProducerRecord.create(externalKafkaConfig.getString("order.preparation.finished.topic"),
+                                                                order.getId(), JsonObject.mapFrom(order).encode());
 
-                                            //Send event to preparation finished
-                                            producer.rxWrite(newRecord2)
-                                                    .subscribe(recordCreated -> LOG.info("Order {} preparation finished event created...", order.getId()),
-                                                            Throwable::printStackTrace);
+                                                //Send event to preparation finished
+                                                producer.rxWrite(newRecord2)
+                                                        .subscribe(recordCreated -> LOG.info("Order {} preparation finished event created...", order.getId()),
+                                                                Throwable::printStackTrace);
 
-                                            LOG.info("Preparation of order {} finished...", order.getId());
-                                            consumer.commit();
-                                        });
+                                                LOG.info("Preparation of order {} finished...", order.getId());
+                                                consumer.commit();
+                                            });
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
                             });
 
             LOG.info(">> Coffee Machine - Event Stream Consumer Started!");

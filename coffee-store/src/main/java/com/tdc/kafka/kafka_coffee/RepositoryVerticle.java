@@ -1,6 +1,5 @@
 package com.tdc.kafka.kafka_coffee;
 
-import com.sun.istack.internal.NotNull;
 import com.tdc.kafka.kafka_coffee.model.Item;
 import com.tdc.kafka.kafka_coffee.model.Order;
 import com.tdc.kafka.kafka_coffee.model.OrderStatus;
@@ -103,7 +102,7 @@ public class RepositoryVerticle extends AbstractVerticle {
                                 order.getPlacedDate(),
                                 order.getConfirmedDate(),
                                 order.getDeliveredDate(),
-                                order.getCancelledDate()))).ignoreElement()
+                                order.getCanceledDate()))).ignoreElement()
                                 .andThen(updateItems(conn, order))
                                 .compose(SQLClientHelper.txCompletableTransformer(conn))
                                 .doFinally(conn::close)
@@ -131,7 +130,7 @@ public class RepositoryVerticle extends AbstractVerticle {
                 });
     }
 
-    private Single<Order> getOrderById(@NotNull SQLConnection conn, @NotNull String orderId) {
+    private Single<Order> getOrderById(SQLConnection conn, String orderId) {
         return conn.rxQuerySingleWithParams(QUERY_ORDER, new JsonArray(Collections.singletonList(orderId)))
                 .map(res -> new Order(res.getString(0),
                         new BigDecimal(res.getString(1)).setScale(2),
@@ -155,7 +154,7 @@ public class RepositoryVerticle extends AbstractVerticle {
                                 ));
     }
 
-    private Completable updateDB(@NotNull SQLClient mySQLClient, @NotNull String tableStatement) {
+    private Completable updateDB(SQLClient mySQLClient, String tableStatement) {
         Function<String, String> calcLength = (str) -> {
             if (str.length() - 1 > 50) {
                 return str.substring(0, 50);
@@ -180,7 +179,7 @@ public class RepositoryVerticle extends AbstractVerticle {
         return null;
     }
 
-    private Completable updateItems(@NotNull SQLConnection conn, @NotNull Order order) {
+    private Completable updateItems(SQLConnection conn, Order order) {
         if (order.getStatus() != OrderStatus.PLACED) {
             return Completable.complete();
         }

@@ -55,7 +55,7 @@ public class UserInputEventStream extends AbstractVerticle {
     }
 
     private final String[] prods = new String[] {"1", "2", "3"};
-    private final Integer[] amounts = new Integer[] {100, 200, 1};
+    private final Integer[] amounts = new Integer[] {50, 100, 1};
     private final BigDecimal[] values = new BigDecimal[] {new BigDecimal("3.50").setScale(2),new BigDecimal("2.00").setScale(2), new BigDecimal("1.50").setScale(2)};
 
     private Order createOrder(int numItems) {

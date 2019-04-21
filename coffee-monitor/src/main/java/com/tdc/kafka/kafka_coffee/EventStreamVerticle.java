@@ -1,7 +1,9 @@
 package com.tdc.kafka.kafka_coffee;
 
 import com.tdc.kafka.kafka_coffee.model.Order;
+import com.tdc.kafka.kafka_coffee.model.Product;
 import io.reactivex.Completable;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
@@ -28,8 +30,8 @@ public class EventStreamVerticle extends AbstractVerticle {
     private static final Logger LOG = LoggerFactory.getLogger(EventStreamVerticle.class);
     private AtomicLong placed = new AtomicLong();
     private AtomicLong deliveries = new AtomicLong();
-    private AtomicLong cancelled = new AtomicLong();
-    private DecimalFormat decimalFormat = new DecimalFormat();
+    private AtomicLong canceled = new AtomicLong();
+    private Map<String, List<Long>> stockOrders = buildStockData();
 
     @Override
     public Completable rxStart() {
@@ -72,7 +74,7 @@ public class EventStreamVerticle extends AbstractVerticle {
         consumer.subscribe(new HashSet<>(Arrays.asList(
                 externalKafkaConfig.getString("order.placed.topic"),
                 externalKafkaConfig.getString("order.preparation.finished.topic"),
-                externalKafkaConfig.getString("order.cancelled.topic"))));
+                externalKafkaConfig.getString("order.canceled.topic"))));
 
         consumer.toObservable()
                 .subscribe(
@@ -86,11 +88,38 @@ public class EventStreamVerticle extends AbstractVerticle {
         stockUpdatedConsumer.subscribe(externalKafkaConfig.getString("stock.updated.topic"));
         stockUpdatedConsumer.toObservable()
                 .subscribe(record -> {
-                    String event = record.value();
-                    String topic = "public-product-count";
-                    publishEvent(topic, event);
+                    try {
+                        JsonArray stockUpdatedValues = new JsonArray(record.value());
+
+                        for (Object prodRaw : stockUpdatedValues.getList()) {
+                            JsonObject prodJO = JsonObject.mapFrom(prodRaw);
+                            Product prod = prodJO.mapTo(Product.class);
+                            List<Long> stockHistory = new ArrayList<>(stockOrders.get(prod.getId()));
+
+                            if (stockHistory != null) {
+                                stockHistory.remove(0);
+                                stockHistory.add(prod.getAmount());
+                                stockOrders.put(prod.getId(), stockHistory);
+                            }
+                        }
+
+                        String topic = "public-product-count";
+                        publishEvent(topic, JsonObject.mapFrom(stockOrders).encode());
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 });
     }
+
+    private Map<String, List<Long>> buildStockData() {
+        Map<String, List<Long>> stockOrders = new HashMap<>();
+        stockOrders.put("1", Arrays.asList(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L));
+        stockOrders.put("2", Arrays.asList(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L));
+        stockOrders.put("3", Arrays.asList(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L));
+        return stockOrders;
+    }
+
+    private DecimalFormat decimalFormat = new DecimalFormat();
 
     private void updateCountersAndPublish(Order order) {
         switch (order.getStatus()) {
@@ -102,8 +131,8 @@ public class EventStreamVerticle extends AbstractVerticle {
                 deliveries.incrementAndGet();
                 break;
             }
-            case CANCELLED: {
-                cancelled.incrementAndGet();
+            case CANCELED: {
+                canceled.incrementAndGet();
                 break;
             }
         }
@@ -111,7 +140,7 @@ public class EventStreamVerticle extends AbstractVerticle {
         try {
             updatePlaced();
             updateDelivered();
-            updateCancelled();
+            updateCanceled();
         } catch (ArithmeticException e) {
             e.printStackTrace();
         }
@@ -135,15 +164,15 @@ public class EventStreamVerticle extends AbstractVerticle {
         publishEvent(topic, event);
     }
 
-    private void updateCancelled() {
+    private void updateCanceled() {
         BigDecimal val = BigDecimal.ZERO;
         if (placed.get() > 0) {
-            val = BigDecimal.valueOf(cancelled.get())
-                    .divide(BigDecimal.valueOf(placed.get()),2, RoundingMode.HALF_UP);
+            val = BigDecimal.valueOf(canceled.get())
+                    .divide(BigDecimal.valueOf(placed.get()), 2, RoundingMode.HALF_UP);
         }
-        LOG.info("Cancelled: {}/{} = {}", cancelled.get(), placed.get(), val);
+        LOG.info("Canceled: {}/{} = {}", canceled.get(), placed.get(), val);
         String event = "{\"percent\":" + (decimalFormat.format(val.multiply(BigDecimal.valueOf(100)))) + "}";
-        String topic = "public-orders-cancelled";
+        String topic = "public-orders-canceled";
         publishEvent(topic, event);
     }
 

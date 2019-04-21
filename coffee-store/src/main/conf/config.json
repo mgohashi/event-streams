@@ -13,6 +13,6 @@
     "order.confirmed.topic": "test-order-confirmed",
     "order.preparation.started.topic": "test-order-preparation-started",
     "order.preparation.finished.topic": "test-order-preparation-finished",
-    "order.cancelled.topic": "test-order-cancelled"
+    "order.canceled.topic": "test-order-canceled"
   }
 }

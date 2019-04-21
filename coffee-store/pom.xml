@@ -134,6 +134,8 @@
                     <arguments>
                         <argument>run</argument>
                         <argument>${main.verticle}</argument>
+                        <argument>-conf</argument>
+                        <argument>${project.basedir}/src/main/conf/config.json</argument>
                     </arguments>
                 </configuration>
             </plugin>

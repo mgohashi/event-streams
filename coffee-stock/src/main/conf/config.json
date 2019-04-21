@@ -10,7 +10,7 @@
     "group.id": "coffee-stock",
     "order.placed.topic": "test-order-placed",
     "order.confirmed.topic": "test-order-confirmed",
-    "order.cancelled.topic": "test-order-cancelled",
+    "order.canceled.topic": "test-order-canceled",
     "stock.updated.topic": "test-stock-updated"
   }
 }

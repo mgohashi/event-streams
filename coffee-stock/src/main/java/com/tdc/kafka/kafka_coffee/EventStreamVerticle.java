@@ -56,35 +56,39 @@ public class EventStreamVerticle extends AbstractVerticle {
                     .subscribe(
                             record -> vertx.eventBus().<String>rxSend(RepositoryVerticle.STOCK_UPDATE_QUEUE, record.value())
                                     .subscribe(message -> {
-                                                Order order = new JsonObject(record.value()).mapTo(Order.class);
-                                                JsonObject reply = new JsonObject(message.body());
+                                                try {
+                                                    Order order = new JsonObject(record.value()).mapTo(Order.class);
+                                                    JsonObject reply = new JsonObject(message.body());
 
-                                                KafkaProducerRecord<String, String> newRecord;
+                                                    KafkaProducerRecord<String, String> newRecord;
 
-                                                if (reply.getBoolean("success")) {
-                                                    order.setConfirmedDate(new Date());
-                                                    order.validateStatus();
-                                                    LOG.info("Order {} items stock withdrew...", order.getId());
-                                                    newRecord =
-                                                            KafkaProducerRecord.create(externalKafkaConfig.getString("order.confirmed.topic"),
-                                                                    order.getId(), JsonObject.mapFrom(order).encode());
-                                                } else {
-                                                    order.setCancelledDate(new Date());
-                                                    order.validateStatus();
-                                                    LOG.info("Order {} cancelled...", order.getId());
-                                                    newRecord =
-                                                            KafkaProducerRecord.create(externalKafkaConfig.getString("order.cancelled.topic"),
-                                                                    order.getId(), JsonObject.mapFrom(order).encode());
+                                                    if (reply.getBoolean("success")) {
+                                                        order.setConfirmedDate(new Date());
+                                                        order.validateStatus();
+                                                        LOG.info("Order {} items stock withdrew...", order.getId());
+                                                        newRecord =
+                                                                KafkaProducerRecord.create(externalKafkaConfig.getString("order.confirmed.topic"),
+                                                                        order.getId(), JsonObject.mapFrom(order).encode());
+                                                    } else {
+                                                        order.setCanceledDate(new Date());
+                                                        order.validateStatus();
+                                                        LOG.info("Order {} canceled...", order.getId());
+                                                        newRecord =
+                                                                KafkaProducerRecord.create(externalKafkaConfig.getString("order.canceled.topic"),
+                                                                        order.getId(), JsonObject.mapFrom(order).encode());
+                                                    }
+
+                                                    //Generating a new event for a new placed order
+                                                    producer.rxWrite(newRecord)
+                                                            .subscribe(recordCreated -> LOG.info("Order {} {} event created...",
+                                                                    order.getId(), order.getStatus()),
+                                                                    Throwable::printStackTrace);
+
+                                                    LOG.info("Event processed {}", message.body());
+                                                    consumer.commit();
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
                                                 }
-
-                                                //Generating a new event for a new placed order
-                                                producer.rxWrite(newRecord)
-                                                        .subscribe(recordCreated -> LOG.info("Order {} {} event created...",
-                                                                order.getId(), order.getStatus()),
-                                                                Throwable::printStackTrace);
-
-                                                LOG.info("Event processed {}", message.body());
-                                                consumer.commit();
                                             },
                                             error -> LOG.error(error.getMessage(), error)),
                             error -> LOG.error(error.getMessage(), error));
