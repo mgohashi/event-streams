@@ -96,11 +96,9 @@ public class EventStreamVerticle extends AbstractVerticle {
                             Product prod = prodJO.mapTo(Product.class);
                             List<Long> stockHistory = new ArrayList<>(stockOrders.get(prod.getId()));
 
-                            if (stockHistory != null) {
-                                stockHistory.remove(0);
-                                stockHistory.add(prod.getAmount());
-                                stockOrders.put(prod.getId(), stockHistory);
-                            }
+                            stockHistory.remove(0);
+                            stockHistory.add(prod.getAmount());
+                            stockOrders.put(prod.getId(), stockHistory);
                         }
 
                         String topic = "public-product-count";
