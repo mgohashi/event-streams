@@ -4,10 +4,10 @@
 
 - `vagrant`: Vagrant environment with Ansible provisioner to provide an environment with Kafka and MySQL; 
 - `coffee-model`: Model project to reuse data POJOs between projects;
-- `coffee-store`: Store project to generate orders and control it's statuses;
-- `coffee-stock`: Stock project to control the product stock items;
-- `coffee-machine`: Machine project to simulate the machine running;
-- `coffee-monitor`: Monitor project to have an overview of the system running;
+- `coffee-store`: Vert.x App Store project to generate orders and control it's statuses;
+- `coffee-stock`: Vert.x App Stock project to control the product stock items;
+- `coffee-machine`: Vert.x App Machine project to simulate the machine running;
+- `coffee-monitor`: Vert.x with Angular App Monitor project to have an overview of the system running;
 
 ## Valid States of Order
 
