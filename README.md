@@ -9,7 +9,7 @@
 - `coffee-machine`: Vert.x App Machine project to simulate the machine running;
 - `coffee-monitor`: Vert.x with Angular App Monitor project to have an overview of the system running;
 
-## Valid States of Order
+## Valid States for an Order
 
  - `placed`: Order is pre validated;
  - `confirmed`: The order has enough ingredients available;
@@ -41,7 +41,7 @@
 - `coffee-store`: `$ mvn exec:java -pl coffee-store`
 - `coffee-monitor`: `$ mvn exec:java -pl coffee-monitor`
  
-## Monitor Dashboard
+## Monitor
 
  - After successfully executed open the dashboard at: http://localhost:8080
  
